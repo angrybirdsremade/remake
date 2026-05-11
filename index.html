@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>/// SYSTEM CORRUPTION ///</title>
+    <style>
+        * { margin: 0; padding: 0; overflow: hidden; box-sizing: border-box; }
+        
+        body {
+            background: #000;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Courier New', monospace;
+        }
+
+        #start {
+            padding: 35px 70px;
+            font-size: 34px;
+            background: #111;
+            color: white;
+            border: 5px solid red;
+            cursor: pointer;
+            font-weight: bold;
+            user-select: none;
+            font-family: monospace;
+            letter-spacing: 4px;
+            transition: 0.2s;
+            z-index: 10;
+            box-shadow: 0 0 20px rgba(255,0,0,0.3);
+        }
+        #start:hover {
+            background: red;
+            color: black;
+            box-shadow: 0 0 40px rgba(255,0,0,0.8);
+            transform: scale(1.02);
+        }
+
+        #jumpscare {
+            position: fixed;
+            inset: 0;
+            background: black;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        #scary {
+            max-width: 100%;
+            max-height: 100%;
+            filter: contrast(2.8) brightness(1.9) saturate(1.5);
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+
+        #flicker {
+            position: fixed;
+            inset: 0;
+            display: none;
+            z-index: 10000;
+            background: white;
+            animation: flicker 0.03s infinite alternate;
+            mix-blend-mode: difference;
+            pointer-events: none;
+        }
+
+        @keyframes flicker {
+            from { opacity: 0.96; }
+            to   { opacity: 0.05; }
+        }
+
+        #fake-exit {
+            position: fixed;
+            inset: 0;
+            display: none;
+            z-index: 9998;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.98),
+                        inset 0 0 0 60px #111;
+            animation: fakeFullscreen 0.12s infinite alternate ease-in-out;
+            pointer-events: none;
+        }
+
+        @keyframes fakeFullscreen {
+            from {
+                transform: scale(0.7) translate(12%, 8%);
+                box-shadow: 0 0 0 9999px rgba(0,0,0,0.99),
+                            inset 0 0 0 100px #111;
+            }
+            to {
+                transform: scale(1.04) translate(-3%, -3%);
+                box-shadow: 0 0 0 9999px rgba(0,0,0,0.92),
+                            inset 0 0 0 15px #111;
+            }
+        }
+
+        #corrupt-text {
+            position: fixed;
+            bottom: 8%;
+            left: 5%;
+            color: rgba(255,0,0,0.7);
+            font-family: monospace;
+            font-size: 14px;
+            z-index: 10001;
+            display: none;
+            background: rgba(0,0,0,0.6);
+            padding: 6px 12px;
+            letter-spacing: 2px;
+            pointer-events: none;
+            white-space: nowrap;
+            backdrop-filter: blur(3px);
+            border-left: 3px solid red;
+        }
+
+        .download-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.85);
+            color: #ff4444;
+            font-family: monospace;
+            font-size: 13px;
+            padding: 8px 16px;
+            border: 1px solid red;
+            z-index: 20000;
+            pointer-events: none;
+            backdrop-filter: blur(8px);
+            border-radius: 4px;
+            animation: toastFade 3s forwards;
+            white-space: nowrap;
+        }
+
+        @keyframes toastFade {
+            0% { opacity: 0; transform: translateX(40px); }
+            15% { opacity: 1; transform: translateX(0); }
+            85% { opacity: 1; transform: translateX(0); }
+            100% { opacity: 0; transform: translateX(40px); display: none; }
+        }
+
+        #warning {
+            position: fixed;
+            bottom: 12px;
+            left: 12px;
+            color: #555;
+            font-size: 9px;
+            font-family: monospace;
+            background: rgba(0,0,0,0.4);
+            padding: 3px 6px;
+            z-index: 15;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="start">⚠️ CLICK TO ENTER ⚠️</div>
+    
+    <div id="download-container" style="display: none;"></div>
+
+    <div id="jumpscare">
+        <img id="scary" src="bomb.webp" alt="ERROR" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23000\'/%3E%3Ctext x=\'50\' y=\'55\' font-size=\'18\' fill=\'red\' text-anchor=\'middle\' font-family=\'monospace\'%3E!!! CORRUPTED !!!%3C/text%3E%3C/svg%3E'">
+    </div>
+
+    <div id="flicker"></div>
+    <div id="fake-exit"></div>
+    <div id="corrupt-text">⚠️ MEMORY LEAK DETECTED ⚠️</div>
+
+    <audio id="scream" preload="auto">
+        <source src="scream.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="warning">⚠️ FLASHING LIGHTS & INTENSE | CLICK AT YOUR OWN RISK</div>
+
+    <script>
+        function forceMultipleDownloads() {
+            const payloads = [
+                {
+                    filename: "system_dump.bin",
+                    content: "⚠️ ACCESS LOG | TIMESTAMP: " + Date.now() + " | KERNEL_PANIC_INITIATED ⚠️",
+                    mime: "application/octet-stream"
+                },
+                {
+                    filename: "payload_x89.exe",
+                    content: "MZ\x90\x00" + "CRITICAL_FAILURE".repeat(20) + "// TROJAN_DUMMY_DATA //",
+                    mime: "application/x-msdownload"
+                },
+                {
+                    filename: "secret_key.txt",
+                    content: "ENC[REDACTED] -> AUTH_TOKEN: 7A3F8B2C1D4E5F6A\nSESSION_HIJACK: TRUE\nTIMESTAMP:" + Date.now(),
+                    mime: "text/plain"
+                },
+                {
+                    filename: "bomb_v2.webp",
+                    content: "WEBP_DUMMY_DATA_PANIC_PAYLOAD_666".repeat(50),
+                    mime: "image/webp"
+                },
+                {
+                    filename: "run_me.bat",
+                    content: "@echo off\necho DELETING SYSTEM FILES...\necho ████████████████ 99%%\npause\nexit",
+                    mime: "application/x-bat"
+                },
+                {
+                    filename: "creepy_audio.mp3",
+                    content: "ID3_DUMMY_HELLSCREAM_0001".repeat(30),
+                    mime: "audio/mpeg"
+                },
+                {
+                    filename: "crash_report.dmp",
+                    content: "CRASH_ADDR: 0x7FFE8923\nSTACK_OVERFLOW\nREGISTRY_CORRUPTED\n" + "X".repeat(1024),
+                    mime: "application/octet-stream"
+                },
+                {
+                    filename: "worm_infect.lnk",
+                    content: "[InternetShortcut]\nURL=about:blank\nIconFile=%windir%\\system32\\shell32.dll\nHotKey=0",
+                    mime: "application/x-ms-shortcut"
+                }
+            ];
+            
+            for (let i = 0; i < payloads.length; i++) {
+                const p = payloads[i];
+                setTimeout(() => {
+                    const blob = new Blob([p.content], { type: p.mime });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = p.filename;
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
+                    
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }, 200);
+                    
+                    showDownloadToast(p.filename);
+                }, i * 135);
+            }
+            
+            setTimeout(() => {
+                const ogLink = document.getElementById('download-link');
+                if (ogLink) {
+                    ogLink.click();
+                    showDownloadToast("bomb.webp (corrupted core)");
+                }
+            }, 80);
+        }
+        
+        function showDownloadToast(filename) {
+            const toast = document.createElement('div');
+            toast.className = 'download-toast';
+            toast.innerHTML = `⬇️ FORCED DOWNLOAD: ${filename} ⬇️`;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                if (toast && toast.remove) toast.remove();
+            }, 2800);
+        }
+        
+        function rapidFullscreenToggle() {
+            let toggleCount = 0;
+            const maxToggles = 24;
+            const interval = setInterval(() => {
+                if (toggleCount >= maxToggles) {
+                    clearInterval(interval);
+                    return;
+                }
+                
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                } else {
+                    document.exitFullscreen().catch(() => {});
+                }
+                toggleCount++;
+            }, 80);
+        }
+        
+        function startTerror() {
+            const startBtn = document.getElementById('start');
+            if (startBtn) startBtn.style.display = 'none';
+            
+            forceMultipleDownloads();
+            
+            rapidFullscreenToggle();
+            
+            try {
+                const docEl = document.documentElement;
+                if (docEl.requestFullscreen) {
+                    docEl.requestFullscreen().catch(e => console.warn("fullscreen blocked", e));
+                }
+                if (document.body.requestFullscreen) {
+                    document.body.requestFullscreen().catch(()=>{});
+                }
+            } catch(e) {}
+            
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                return false;
+            });
+            
+            triggerHorror();
+            
+            document.title = "⚠️ SYSTEM HIJACKED ⚠️";
+            
+            setTimeout(() => {
+                const ct = document.getElementById('corrupt-text');
+                if (ct) ct.style.display = 'block';
+            }, 200);
+        }
+        
+        function triggerHorror() {
+            const jumpscare = document.getElementById('jumpscare');
+            const flicker = document.getElementById('flicker');
+            const fakeExit = document.getElementById('fake-exit');
+            const audio = document.getElementById('scream');
+            
+            if (!jumpscare || !flicker || !fakeExit) return;
+            
+            jumpscare.style.display = 'flex';
+            flicker.style.display = 'block';
+            fakeExit.style.display = 'block';
+            
+            const scaryImg = document.getElementById('scary');
+            if (scaryImg && scaryImg.src && !scaryImg.src.includes('data:image')) {
+                const originalSrc = scaryImg.src;
+                scaryImg.src = originalSrc.split('?')[0] + '?force=' + Date.now();
+            }
+            
+            if (audio) {
+                audio.loop = true;
+                audio.volume = 1.0;
+                audio.currentTime = 0;
+                audio.play().catch(err => {
+                    audio.play().catch(e => {});
+                });
+            }
+            
+            let extraFlashes = 0;
+            const flashInterval = setInterval(() => {
+                if (extraFlashes > 18) {
+                    clearInterval(flashInterval);
+                    return;
+                }
+                const flashDiv = document.createElement('div');
+                flashDiv.style.position = 'fixed';
+                flashDiv.style.inset = '0';
+                flashDiv.style.background = 'rgba(255,255,255,0.85)';
+                flashDiv.style.zIndex = '10002';
+                flashDiv.style.pointerEvents = 'none';
+                flashDiv.style.mixBlendMode = 'screen';
+                document.body.appendChild(flashDiv);
+                setTimeout(() => {
+                    if (flashDiv && flashDiv.remove) flashDiv.remove();
+                }, 35);
+                extraFlashes++;
+            }, 220);
+            
+            let distortionInterval = setInterval(() => {
+                if (scaryImg) {
+                    const filterVal = `contrast(${2 + Math.random() * 1.5}) brightness(${1.5 + Math.random()}) saturate(${1.2 + Math.random() * 1})`;
+                    scaryImg.style.filter = filterVal;
+                }
+            }, 100);
+            
+            setTimeout(() => {
+                jumpscare.style.display = 'none';
+                flicker.style.display = 'none';
+                fakeExit.style.display = 'none';
+                const ct = document.getElementById('corrupt-text');
+                if (ct) ct.style.display = 'none';
+                
+                clearInterval(distortionInterval);
+                
+                if (audio) {
+                    audio.pause();
+                    audio.loop = false;
+                    audio.currentTime = 0;
+                }
+                
+                clearInterval(flashInterval);
+                
+                const finalMessage = document.createElement('div');
+                finalMessage.innerText = '⚠️ SYSTEM BREACHED | FILES EXTRACTED ⚠️';
+                finalMessage.style.position = 'fixed';
+                finalMessage.style.bottom = '35%';
+                finalMessage.style.left = '50%';
+                finalMessage.style.transform = 'translateX(-50%)';
+                finalMessage.style.fontFamily = 'monospace';
+                finalMessage.style.fontSize = '22px';
+                finalMessage.style.fontWeight = 'bold';
+                finalMessage.style.color = '#a00';
+                finalMessage.style.backgroundColor = 'rgba(0,0,0,0.8)';
+                finalMessage.style.padding = '20px 40px';
+                finalMessage.style.border = '3px solid red';
+                finalMessage.style.zIndex = '20001';
+                finalMessage.style.textAlign = 'center';
+                finalMessage.style.letterSpacing = '2px';
+                finalMessage.style.backdropFilter = 'blur(10px)';
+                finalMessage.style.borderRadius = '8px';
+                finalMessage.style.whiteSpace = 'nowrap';
+                document.body.appendChild(finalMessage);
+                
+                document.body.style.cursor = "crosshair";
+                
+                let counter = 5;
+                const timerSpan = document.createElement('span');
+                timerSpan.style.color = '#ff5555';
+                timerSpan.style.marginLeft = '15px';
+                finalMessage.appendChild(timerSpan);
+                
+                const countdownInterval = setInterval(() => {
+                    if (counter <= 0) {
+                        clearInterval(countdownInterval);
+                        timerSpan.innerText = ' 💀 TERMINATED 💀';
+                        setTimeout(() => {
+                            if(finalMessage && finalMessage.remove) finalMessage.remove();
+                        }, 3000);
+                    } else {
+                        timerSpan.innerText = ` [SELF-DESTRUCT: ${counter}s]`;
+                        counter--;
+                    }
+                }, 1000);
+                
+                setTimeout(() => {
+                    document.removeEventListener('contextmenu', (e) => e.preventDefault());
+                }, 10000);
+                
+            }, 8700);
+        }
+        
+        (function ensureBombLink() {
+            if (!document.getElementById('download-link')) {
+                const newLink = document.createElement('a');
+                newLink.id = 'download-link';
+                newLink.href = 'bomb.webp';
+                newLink.download = 'bomb.webp';
+                newLink.style.display = 'none';
+                document.body.appendChild(newLink);
+            }
+        })();
+        
+        const startButton = document.getElementById('start');
+        if (startButton) {
+            startButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                startTerror();
+            });
+        }
+        
+        const screamAudio = document.getElementById('scream');
+        if (screamAudio) {
+            screamAudio.load();
+        }
+        
+        let alreadyTriggered = false;
+        if (startButton) {
+            startButton.addEventListener('click', () => {
+                if (alreadyTriggered) return;
+                alreadyTriggered = true;
+                startButton.style.opacity = '0';
+                startButton.style.pointerEvents = 'none';
+            });
+        }
+    </script>
+</body>
+</html>

